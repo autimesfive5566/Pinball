@@ -1,0 +1,13 @@
+{
+  "app": {
+    "windows": [{
+      "label": "main", "title": "Pinball Phase 0 · NRB",
+      "width": 260, "height": 420,
+      "resizable": false, "maximizable": false, "fullscreen": false,
+      "transparent": true, "decorations": false, "shadow": false,
+      "backgroundColor": "#00000000", "alwaysOnTop": false,
+      "skipTaskbar": false, "visible": true, "zoomHotkeysEnabled": false,
+      "noRedirectionBitmap": true
+    }]
+  }
+}

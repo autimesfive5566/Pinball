@@ -1,0 +1,16 @@
+[package]
+name = "pinball"
+version = "0.1.0"
+description = "Pinball Phase 0 technical prototype"
+edition = "2021"
+rust-version = "1.90"
+
+[lib]
+name = "pinball_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "=2.7.4", features = [] }
+
+[dependencies]
+tauri = { version = "=2.12.4", features = [] }

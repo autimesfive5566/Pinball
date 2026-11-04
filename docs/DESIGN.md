@@ -1,6 +1,6 @@
 # 技術設計與候選決策
 
-狀態：規劃建議，尚未實作或實測。確認需求以 `REQUIREMENTS.md` 為準，實際成果以 `STATUS.md` 為準。
+本文保留整體規劃與候選決策。Phase 0 已開始，只有明確附驗證證據的部分可稱已測；確認需求以 `REQUIREMENTS.md` 為準，實際成果以 `STATUS.md` 為準。
 
 ## 1. 選型與 Windows 風險
 
@@ -49,6 +49,16 @@ Tauri 最小原型完成、合理排除設定及版本問題後，仍在目標 W
 
 Electron 也要實測透明；代價是較大體積、記憶體及 Chromium 更新責任。前端模組保持框架無關，便於必要時替換 shell。
 
+### Phase 0 已採用的原型方案（2026-11-04）
+
+- 260×420 logical pixels 的 Tauri 透明外殼，獨立拖曳、最小化、關閉；不隱藏、不置頂、不做穿透。兩份視窗設定僅 NRB 與標題不同，方便 Windows A/B；設定通過 2.12.4 schema，原生效果未測。
+- `src/config.ts` 的 `phase-0-v1` 是 8 釘封閉測試盤，不套用第 6 節的正式盤布局。Canvas 260×284；40 px/m、球半徑 3px、釘半徑 4px、重力 3.5 等均為暫定值。一個 static body 掛 12 fixtures，一個 dynamic body 掛一顆球，共 2 bodies／13 fixtures。
+- `PhysicsScene` 不接收遊戲規則，主入口只做控制與組裝，尚無 Game 模組；碰撞回呼只累積釘接觸數，step 後提交。重落重用同一 body，不額外生球。
+- `FixedStepLoop` 採第 9 節 accumulator、60／120 Hz、5／10 步上限與丟時間記錄；暫停原因集合保留手動、visibility、minimized 與操作／平台失敗原因。恢復清時間及插值。原生 resize／focus 事件加 250ms 最小化狀態輪詢，僅失焦不自動停球；Windows 事件次序與最小化仍需實測。
+- Canvas backing store 隨 DPR 更新，物理世界不重建。量測預設隱藏；量測記錄暖機 10 秒、可見連續 120 秒，暫停時中止，不把停用區段混入報告。每系列最多保留 32768 樣本；平均值與樣本總數包含完整區間，超過容量時百分位採最近保留樣本。正式 120 秒、60／120／144Hz 比較不應超過此容量，仍須看匯出的 retained／count。
+- Playwright 只用於開發期瀏覽器行為／透明像素驗證，使用虛擬時鐘；不進 production bundle，不是效能證據。`stage-js` 是 Planck peer，保留正常依賴解析，不載入 with-testbed 或 stage 渲染。
+- `.github/workflows/phase-0-windows.yml` 提供手動 Windows x64 release／NRB 雙組建置，未執行；不自動 push、發布或宣稱 Windows gate 通過。
+
 ## 2. 版本與環境：研究不等於整合通過
 
 前輪於 2026-11-03 讀取官方來源／npm metadata 得到以下候選。本輪文件工作未重新查詢，不以 latest 當可重現版本。
@@ -63,6 +73,8 @@ Electron 也要實測透明；代價是較大體積、記憶體及 Chromium 更�
 
 以上沒有完成整組安裝、型別檢查、建置或 Windows 執行。必要時可退到仍受支援且實際通過的穩定版本，不追逐新版本。
 
+2026-11-04 實作後補充：上述為前輪研究歷史。現在已安裝 Node **24.19.0**／npm **11.9.0**，並以 TypeScript **7.0.2**、Vite **8.3.5**、Planck **1.5.1**、Tauri API／CLI **2.12.4**、Vitest **5.1.0**、Playwright **1.62.1** 完成前端檢查；確切樹見 `package-lock.json`。Rust **1.99.1** 已在 Linux 安裝並通過 rustfmt，`Cargo.lock` 鎖定 Tauri **2.12.4**／tauri-build **2.7.4**（2.6.0 與 Tauri 的 ^2.7.3 要求不合，已修正）／tauri-utils **2.10.2**／wry **0.57.1**／tao **0.37.2**。Linux 原生建置因 GLib／GTK／WebKitGTK 開發套件不足而受限；**Rust 安裝、Cargo 解析與前端通過不代表此原生組合建置通過，更不代表 Windows 相容**。證據及後續 gate 見 [Phase 0 報告](validation/phase-0.md)。
+
 Planck npm 名稱是 `planck`；候選版本宣告 stage-js peer dependency，npm 可能安裝它。檢查產物避免引入 with-testbed 及展示繪圖框架，不忽略驗證來掩蓋 peer 問題。
 
 Windows 開發需 Node／npm、Rust MSVC、Microsoft C++ Build Tools 的桌面 C++ 工作負載／Windows SDK、WebView2。首版 x64。玩家不需 Node／Rust／Vite，但需 WebView2。
@@ -71,7 +83,7 @@ Linux 可跑前端型別、純規則、無畫面物理與前端 build。Linux �
 
 ## 3. 模組與目錄
 
-以下為後續目錄建議，本次只有文件；初期小檔案可合併，不先建立空殼架構。
+以下為完整遊戲的後續目錄建議；Phase 0 只建立所需模組，初期小檔案可合併，不先建立空殼架構。
 
 ```text
 src/

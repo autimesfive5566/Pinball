@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Pinball Phase 0",
+  "version": "0.1.0",
+  "identifier": "dev.pinball.phase0",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{
+      "label": "main", "title": "Pinball Phase 0",
+      "width": 260, "height": 420,
+      "resizable": false, "maximizable": false, "fullscreen": false,
+      "transparent": true, "decorations": false, "shadow": false,
+      "backgroundColor": "#00000000", "alwaysOnTop": false,
+      "skipTaskbar": false, "visible": true, "zoomHotkeysEnabled": false,
+      "noRedirectionBitmap": false
+    }],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    }
+  },
+  "bundle": { "active": false }
+}

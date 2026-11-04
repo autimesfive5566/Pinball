@@ -2,7 +2,7 @@
 
 Windows 10／11 的小型透明桌面遊戲。以一顆物理鋼珠的實際落點，決定本局投入的虛擬鋼珠獎勵。
 
-**目前只有需求與規劃文件，沒有可執行遊戲。Phase 0 尚未開始，Windows 透明與 60 FPS 尚未驗證。**
+**Phase 0 已建立最小落球原型，可執行瀏覽器驗證；Windows release、桌面透明與 60 FPS gate 尚未通過。** 實際證據見 [Phase 0 驗證報告](docs/validation/phase-0.md)，進度以 [STATUS](docs/STATUS.md) 為準。
 
 候選技術：TypeScript、Tauri 2、Vite、Canvas 2D、Planck、WebView2。先做技術原型，再逐階段開發；不一次生成完整遊戲。
 
@@ -32,8 +32,44 @@ Windows 10／11 的小型透明桌面遊戲。以一顆物理鋼珠的實際落�
 
 ## 保存範圍
 
-這六份文件納入本儲存庫的 Git 版本管理，目標分支為 `main`。新對話應開啟 `autimesfive5566/Pinball` 的 `main`，先確認文件已取得，再依上述順序閱讀；對話本身不會自動繼承。
+既有六份接手文件及本次 Phase 0 原型、設定、lockfiles、測試與驗證紀錄納入 Git 版本管理，目標分支為 `main`。新對話應開啟 `autimesfive5566/Pinball` 的 `main`，先確認文件已取得，再依上述順序閱讀；對話本身不會自動繼承。
 
 提交保存在本機 Git，推送才會同步到 GitHub；遠端是否同步可比對本機 `HEAD` 與遠端 `refs/heads/main`。Git 推送不等於發布雲端環境或遊戲。
 
-目前尚無安裝／執行指令。正式建立專案並驗證後才補上，不能把預計指令寫成已測試指令。
+## 開發與驗證
+
+固定 Node **24.19.0**、npm **11.9.0**；Rust 工具鏈見 `rust-toolchain.toml`。在儲存庫根目錄執行：
+
+```sh
+npm ci
+npm run typecheck
+npm test
+npm run build
+npm run dev
+```
+
+本輪已驗證 npm ci、型別、22 個單元測試、production build 及 production preview；雲端 npm cache 使用 `--cache ./work/npm-cache`。開發伺服器為 `http://127.0.0.1:1420`。瀏覽器中的關閉／最小化刻意停用；它只驗證前端，不能代表 Windows 透明通過。
+
+原型提供重新落球、暫停／繼續及 60／120Hz 切換。量測預設隱藏；按「記錄 120 秒」先暖機 10 秒，再收集 120 秒，期間多次手動重落。最小化／暫停會取消量測，完成後可匯出 JSON。沒有投注、倍率、完整軌道或球道。
+
+瀏覽器檢查需可用的 Chromium。先於一個終端執行 `npm run preview`，再於本輪 Linux 環境執行：
+
+```sh
+PINBALL_CHROMIUM_PATH=/usr/bin/chromium npm run test:browser
+```
+
+其他機器可將 `PINBALL_CHROMIUM_PATH` 指向已安裝的 Chromium，或使用 Playwright 自帶瀏覽器。此測試用虛擬時間驗證互動與匯出流程，不提供效能證據。
+
+## Windows 原型建置與待驗收
+
+需 Windows x64、Microsoft C++ Build Tools／Windows SDK、Rust MSVC、WebView2。以下腳本已建立，但本輪 **沒有 Windows 建置或執行證據**：
+
+```sh
+npm run desktop:dev
+npm run desktop:build
+npm run desktop:build:nrb
+```
+
+兩種 release 都輸出 `src-tauri/target/release/pinball.exe`；先保存一般組，才建置 NRB 組，避免覆蓋。這是 Phase 0 執行檔，尚無安裝包。Linux 原生建置因缺 GLib／GTK／WebKitGTK 開發套件受限。
+
+另提供手動 GitHub Actions 工作流程 `Phase 0 Windows release prototype`，可產出 NRB 關／開兩份 exe、SHA256 與建置版本資訊。工作流程尚未執行，後續可另行授權觸發。產出 exe 仍需依 [ROADMAP](docs/ROADMAP.md) 第 8、9 節在 Win10／Win11 實機檢查透明、DPI、操作及效能。

@@ -1,0 +1,64 @@
+{
+  "browser": "154.0.8037.57",
+  "playwright": "1.62.1",
+  "clock": "synthetic",
+  "performanceEvidence": false,
+  "results": [
+    {
+      "dpr": 1,
+      "result": "PASS",
+      "canvas": {
+        "width": 260,
+        "height": 284,
+        "logicalWidth": 260,
+        "logicalHeight": 284,
+        "alpha": 0,
+        "root": "rgba(0, 0, 0, 0)",
+        "overflow": false
+      },
+      "pageErrors": []
+    },
+    {
+      "dpr": 1.25,
+      "result": "PASS",
+      "canvas": {
+        "width": 325,
+        "height": 355,
+        "logicalWidth": 260,
+        "logicalHeight": 284,
+        "alpha": 0,
+        "root": "rgba(0, 0, 0, 0)",
+        "overflow": false
+      },
+      "pageErrors": []
+    },
+    {
+      "dpr": 1.5,
+      "result": "PASS",
+      "canvas": {
+        "width": 390,
+        "height": 426,
+        "logicalWidth": 260,
+        "logicalHeight": 284,
+        "alpha": 0,
+        "root": "rgba(0, 0, 0, 0)",
+        "overflow": false
+      },
+      "pageErrors": []
+    },
+    {
+      "dpr": 2,
+      "result": "PASS",
+      "canvas": {
+        "width": 520,
+        "height": 568,
+        "logicalWidth": 260,
+        "logicalHeight": 284,
+        "alpha": 0,
+        "root": "rgba(0, 0, 0, 0)",
+        "overflow": false
+      },
+      "pageErrors": []
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+name: Phase 0 Windows release prototype
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        nrb: [false, true]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install pinned tools and dependencies
+        shell: pwsh
+        run: |
+          npm install --global npm@11.9.0
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          rustup toolchain install 1.99.1 --profile minimal --component rustfmt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm ci --no-audit --no-fund
+          exit $LASTEXITCODE
+      - name: Type, physics and time checks
+        shell: pwsh
+        run: |
+          npm run typecheck
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo fmt --manifest-path src-tauri/Cargo.toml --check
+          exit $LASTEXITCODE
+      - name: Build release executable
+        shell: pwsh
+        run: |
+          if ('${{ matrix.nrb }}' -eq 'true') {
+            npm run desktop:build:nrb
+          } else {
+            npm run desktop:build
+          }
+          exit $LASTEXITCODE
+      - name: Collect prototype and build identity
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force output | Out-Null
+          Copy-Item src-tauri/target/release/pinball.exe output/pinball.exe
+          (Get-FileHash output/pinball.exe -Algorithm SHA256).Hash | Set-Content output/SHA256.txt
+          @(
+            "source=$env:GITHUB_SHA"
+            'noRedirectionBitmap=${{ matrix.nrb }}'
+            "os=$($PSVersionTable.OS)"
+            "$(node --version)"
+            "npm $(npm --version)"
+            "$(rustc --version)"
+            'Build evidence only; desktop transparency, WebView2, DPI and performance require manual validation.'
+          ) | Set-Content output/build-info.txt
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: pinball-phase-0-nrb-${{ matrix.nrb }}
+          path: output/
+          if-no-files-found: error
+          retention-days: 7

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Pinball · Phase 0</title>
+  </head>
+  <body>
+    <main id="app">
+      <header>
+        <span id="drag-region">PINBALL · P0</span>
+        <button id="minimize" aria-label="最小化" title="最小化">−</button>
+        <button id="close" aria-label="關閉" title="關閉">×</button>
+      </header>
+      <canvas id="board" aria-label="八顆固定釘與一顆自由落球的物理原型"></canvas>
+      <section class="controls" aria-label="原型控制">
+        <button id="drop">重新落球</button>
+        <button id="pause" aria-pressed="false">暫停</button>
+        <label>步進 <select id="hz"><option value="60">60 Hz</option><option value="120">120 Hz</option></select></label>
+      </section>
+      <footer>
+        <label><input id="debug" type="checkbox" />量測</label>
+        <button id="capture" title="暖機十秒後，量測一百二十秒">記錄 120 秒</button>
+        <button id="export" disabled>匯出</button>
+      </footer>
+      <output id="status" role="status" aria-live="polite">正在初始化…</output>
+      <output id="metrics" hidden></output>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

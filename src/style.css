@@ -1,0 +1,21 @@
+:root { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; color: #dceff0; background: transparent; font-size: 11px; }
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 260px; height: 420px; overflow: hidden; background: transparent; }
+#app { width: 260px; height: 420px; background: transparent; position: relative; }
+header { height: 32px; display: flex; align-items: center; gap: 4px; padding: 0 8px; }
+#drag-region { flex: 1; height: 30px; line-height: 30px; letter-spacing: 1.2px; font-weight: 600; user-select: none; cursor: move; text-shadow: 0 1px 2px #10252b; }
+button, select { color: #e7f3f3; background: #19343ee8; border: 1px solid #73959b; border-radius: 4px; min-height: 28px; font: inherit; cursor: pointer; padding: 2px 6px; }
+button:hover:enabled { background: #30515b; }
+button:disabled { opacity: .45; cursor: default; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid #ffd580; outline-offset: 1px; }
+header button { width: 28px; font-size: 18px; }
+canvas { display: block; width: 260px; height: 284px; background: transparent; }
+.controls, footer { display: flex; gap: 5px; padding: 3px 8px; align-items: center; }
+.controls { height: 36px; }
+footer { height: 34px; }
+label { white-space: nowrap; text-shadow: 0 1px 2px #10252b; }
+select { padding: 1px; }
+input { vertical-align: middle; margin: 0 3px 0 0; }
+#status { display: block; padding: 2px 8px; font-size: 10px; line-height: 14px; text-shadow: 0 1px 2px #10252b; }
+#metrics { position: absolute; left: 15px; top: 43px; right: 15px; padding: 5px; background: #10252be8; border-radius: 3px; white-space: pre-line; font-size: 10px; line-height: 15px; pointer-events: none; }
+[hidden] { display: none !important; }
