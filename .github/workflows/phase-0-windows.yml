@@ -20,6 +20,16 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
+      - name: Check native icon assets
+        shell: pwsh
+        run: |
+          $config = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          foreach ($icon in $config.bundle.icon) {
+            $path = Join-Path src-tauri $icon
+            if (-not (Test-Path $path -PathType Leaf)) {
+              throw "Missing native icon asset: $path"
+            }
+          }
       - name: Install pinned tools and dependencies
         shell: pwsh
         run: |

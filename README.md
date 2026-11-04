@@ -62,7 +62,7 @@ PINBALL_CHROMIUM_PATH=/usr/bin/chromium npm run test:browser
 
 ## Windows 原型建置與待驗收
 
-需 Windows x64、Microsoft C++ Build Tools／Windows SDK、Rust MSVC、WebView2。以下腳本已建立，但本輪 **沒有 Windows 建置或執行證據**：
+需 Windows x64、Microsoft C++ Build Tools／Windows SDK、Rust MSVC、WebView2。以下腳本已建立；Windows CI 曾因缺少原生圖示失敗，本機已補修正，**成功建置與原生執行仍待驗證**：
 
 ```sh
 npm run desktop:dev
@@ -72,4 +72,4 @@ npm run desktop:build:nrb
 
 兩種 release 都輸出 `src-tauri/target/release/pinball.exe`；先保存一般組，才建置 NRB 組，避免覆蓋。這是 Phase 0 執行檔，尚無安裝包。Linux 原生建置因缺 GLib／GTK／WebKitGTK 開發套件受限。
 
-另提供手動 GitHub Actions 工作流程 `Phase 0 Windows release prototype`，可產出 NRB 關／開兩份 exe、SHA256 與建置版本資訊。工作流程尚未執行，後續可另行授權觸發。產出 exe 仍需依 [ROADMAP](docs/ROADMAP.md) 第 8、9 節在 Win10／Win11 實機檢查透明、DPI、操作及效能。
+另提供手動 GitHub Actions 工作流程 `Phase 0 Windows release prototype`，用於產出 NRB 關／開兩份 exe、SHA256 與建置版本資訊。缺圖示修正同步後，應以修正所在的新提交／分支按 **Run workflow**；舊執行的 **Re-run jobs** 仍使用舊提交。建置成功後，依 [ROADMAP](docs/ROADMAP.md) 第 8、9 節在 Win10／Win11 實機檢查透明、DPI、操作及效能；修正紀錄見 [Phase 0 報告](docs/validation/phase-0.md)。

@@ -57,7 +57,8 @@ Electron 也要實測透明；代價是較大體積、記憶體及 Chromium 更�
 - `FixedStepLoop` 採第 9 節 accumulator、60／120 Hz、5／10 步上限與丟時間記錄；暫停原因集合保留手動、visibility、minimized 與操作／平台失敗原因。恢復清時間及插值。原生 resize／focus 事件加 250ms 最小化狀態輪詢，僅失焦不自動停球；Windows 事件次序與最小化仍需實測。
 - Canvas backing store 隨 DPR 更新，物理世界不重建。量測預設隱藏；量測記錄暖機 10 秒、可見連續 120 秒，暫停時中止，不把停用區段混入報告。每系列最多保留 32768 樣本；平均值與樣本總數包含完整區間，超過容量時百分位採最近保留樣本。正式 120 秒、60／120／144Hz 比較不應超過此容量，仍須看匯出的 retained／count。
 - Playwright 只用於開發期瀏覽器行為／透明像素驗證，使用虛擬時鐘；不進 production bundle，不是效能證據。`stage-js` 是 Planck peer，保留正常依賴解析，不載入 with-testbed 或 stage 渲染。
-- `.github/workflows/phase-0-windows.yml` 提供手動 Windows x64 release／NRB 雙組建置，未執行；不自動 push、發布或宣稱 Windows gate 通過。
+- `.github/workflows/phase-0-windows.yml` 提供手動 Windows x64 release／NRB 雙組建置。使用者後續執行時發現缺圖示，已補本機修正，Windows 重跑待驗證；不自動 push、發布或宣稱 Windows gate 通過。
+- 原生圖示明確指定 `icons/icon.ico` 與 `icons/icon.png`；ICO 含 16～256 px 七種尺寸，PNG 為 256×256 RGBA。這是原型的程式／視窗資源，不載入遊戲 Canvas。即使 `bundle.active=false`、CLI 使用 `--no-bundle`，`tauri-build` 仍需 ICO 生成 Windows resource；Unix codegen 也需 PNG。CI 在安裝及編譯前檢查這些檔案存在，避免晚到 Rust resource 階段才發現漏檔。
 
 ## 2. 版本與環境：研究不等於整合通過
 

@@ -112,3 +112,33 @@ failed to build app
 - 持久報告：本檔、[瀏覽器功能摘要](phase-0-browser.json)、[來源指紋](phase-0-source-sha256.txt)。
 - 本次工作區中間資料（Git 忽略，非保證下輪存在）：`work/logs/npm-install.log`、`npm-ci.log`、`frontend-build.log`、`cargo-lock.log`、`tauri-build-linux.log`、`browser-smoke.log`；`work/validation/unit.json`、`browser-smoke.json`、`browser-dpr-*.png`、`browser-capture-synthetic.json`。
 - `browser-capture-synthetic.json` 與截圖 HUD 的數字使用虛擬時鐘，**不得當 Windows 或效能測量產物**。重要結果已寫入本報告，不依賴中間 log 才能恢復上下文。
+
+## 7. Windows CI 圖示缺漏修正（2026-11-04）
+
+第 1～6 節保留首次原型驗證歷史；其中 Windows 工作流程「未測」是當時狀態。使用者隨後貼回 Windows CI 失敗日誌，沒有提供 run URL／來源 SHA，因此不推定具體 job 或 NRB 組別：
+
+```text
+failed to run custom build command for `pinball v0.1.0`
+`D:\a\Pinball\Pinball\src-tauri\icons/icon.ico` not found; required for generating a Windows Resource file during tauri-build
+Process completed with exit code 1.
+```
+
+**失敗已確認**：專案缺少圖示資源。依 `Cargo.lock` checksum 核對並閱讀 `tauri-build 2.7.4` 的 `src/lib.rs`，Windows build script 會從 `bundle.icon` 選 ICO，未指定就找 `icons/icon.ico`，且不因 `bundle.active=false` 跳過。`tauri-codegen 2.7.4` 的 `src/context.rs` 在 Unix 另需 PNG，因此一起補齊。日誌中的 `package.metadata does not exist` 不是此次中止的主因。
+
+**實際修正**：新增 `src-tauri/icons/icon.ico`（16／24／32／48／64／128／256 px）、`icon.png`（256×256 RGBA），於 `tauri.conf.json` 明確列出，並新增 Windows workflow 的 `Check native icon assets` 前置步驟。不修改遊戲規則、物理或套件版本；沒有安裝新的 npm／Cargo 依賴。
+
+本次檢查工作目錄 `/workspace/Pinball`，Python 3.12.14、Pillow 12.3.0、jsonschema 4.26.0、Git 2.52.0：
+
+| 檢查／命令 | 結果與界限 |
+| --- | --- |
+| Python `struct.unpack_from('<HHH', data)`、`PIL.Image.open`／`icon.ico.getimage` | **PASS**：ICO header 為 icon 類型，七個尺寸均能完整解碼為 RGBA；PNG 能解碼且含透明／不透明像素。不是 Windows resource 編譯證據。 |
+| `file src-tauri/icons/icon.ico src-tauri/icons/icon.png` | **PASS**：辨識為 Windows icon resource 與 RGBA PNG。 |
+| Python `jsonschema.validate` | **PASS**：一般及 NRB 合併設定符合 Tauri CLI 2.12.4 schema；兩份設定均能解析到 ICO／PNG。schema 下載來源與 `package-lock.json` integrity 相符。 |
+| Python YAML／文件／SHA256 檢查、`git diff --check` | **PASS**：工作流程可解析且包含圖示檢查；文件連結及修正後 32 份來源指紋完整。 |
+| Windows CI 修正後重跑、原生 resource 編譯／exe、透明／DPI／操作／效能 | **未測**：目前為 Linux；本次保存圖示修正，Windows 重跑尚未執行，不能稱原生建置或 gate 通過。 |
+
+原始 [30 份指紋](phase-0-source-sha256.txt) 仍對應 `86d5089` 的既有測試來源；修正後 [32 份指紋](phase-0-icon-fix-source-sha256.txt) 另存，包含兩個圖示及改動後的設定／workflow。沒有重跑前端功能測試，既有 22 項測試不當成本次 Windows 成功證據。
+
+下一步：修正提交／推送後，在 **Run workflow** 選含修正的分支建立新執行；不要只重跑舊提交的失敗 jobs。一般／NRB 兩組均成功產出 exe 後，才進行第 5 節的實機程序。提交、推送與觸發 CI 依當輪授權執行。
+
+使用者隨後明確要求「提交並推送」；本次依授權保存修正至既有 `main`，沒有觸發 CI 或宣稱原生通過。推送同步結果以本機 HEAD 與遠端 SHA 核對。

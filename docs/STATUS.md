@@ -6,7 +6,11 @@
 
 **Phase 0 已開始：跨平台落球原型與前端驗證已完成，Tauri 原生建置／Windows gate 尚未通過。** 沒有投注、倍率、完整軌道、80 釘或 12 球道，未開始 Phase 1。
 
-**使用者已確認**：先要求「請開始 Phase 0，範圍以 docs/ROADMAP.md 為準」，其後於 2026-11-04 明確要求「請照你的建議執行」，授權將這輪 Phase 0 成果提交並推送至既有儲存庫的 `main`。此提交保存階段進度；Windows gate 仍未通過，手動 CI 尚未執行。
+**使用者已確認**：先要求「請開始 Phase 0，範圍以 docs/ROADMAP.md 為準」，其後於 2026-11-04 明確要求「請照你的建議執行」，授權將該輪 Phase 0 成果提交並推送至既有儲存庫的 `main`。保存時 Windows gate 未通過、手動 CI 未執行；後續 Windows 建置失敗見下段。
+
+**接手檢查紀錄（2026-11-04）**：使用者要求先閱讀文件、核對工作區並回報進度與下一步，不重新開始或直接實作完整遊戲。已接回既有 Phase 0 提交並核對來源；當時僅新增接手紀錄，未新增遊戲功能、安裝依賴、重跑功能測試、提交、推送或觸發 CI，也未查核遠端執行情況。
+
+**最新阻礙與修正（2026-11-04）**：使用者貼回 GitHub Actions Windows 建置錯誤，`tauri-build` 因缺少 `src-tauri/icons/icon.ico` 退出。已補上有效的多尺寸 ICO／RGBA PNG、明確設定圖示路徑，並加入 CI 編譯前的資源存在檢查。圖示解碼、一般／NRB 設定 schema 與文件檢查通過；Windows 編譯仍待修正同步後重跑，沒有 exe 或實機通過的新證據。使用者隨後明確要求「提交並推送」；本次提交保存上述修正，推送目標為 `origin/main`，結果以本機 HEAD 與遠端 SHA 核對。未觸發 CI；不擴入 Phase 1。
 
 ## 2. 實際成果與證據
 
@@ -18,8 +22,8 @@
 - [x] 固定 Node 24.19.0／npm 11.9.0 與 npm 精確版本／lockfile；`npm ci`、型別、22 個單元測試及前端 production build 通過。
 - [x] Chromium 四種 DPR（1／1.25／1.5／2）驗證 Canvas／CSS Alpha、控制、暫停／恢復、60／120 Hz 切換、重落及匯出；無頁面 JS 錯誤。使用虛擬時鐘，**不是 FPS 證據**。
 - [x] 安裝 Rust 1.99.1、rustfmt 通過、Cargo.lock 解析成功；Tauri 2.12.4 schema 與權限名稱對照通過。
-- [x] Windows release／NRB 雙組手動 GitHub Actions 工作流程已建立，**尚未執行**。
-- [ ] Tauri 原生編譯通過：Linux 嘗試建置停在缺 `glib-2.0.pc`，另確認缺 GTK／WebKitGTK 開發套件；屬環境受限，沒有原生產物。
+- [x] Windows release／NRB 雙組手動 GitHub Actions 工作流程已建立；使用者已執行並回報缺圖示失敗，修正納入本次提交，Windows 重跑尚未執行。
+- [ ] Tauri 原生編譯通過：Linux 嘗試建置停在缺 `glib-2.0.pc`，另確認缺 GTK／WebKitGTK 開發套件；Windows CI 因缺 ICO 失敗，修正後尚未重跑。沒有成功原生產物。
 - [ ] Windows x64 release 執行檔、Win10／Win11 DWM／WebView2 真透明、閃白／殘影、拖曳／關閉／最小化、實際跨 DPI、恢復順序及效能驗收。
 - [ ] NRB 開／關實機比較、60／120 Hz 透明 release 效能比較；Phase 0 整體 gate 仍未通過。
 
@@ -28,6 +32,8 @@
 ## 3. 工作區與環境
 
 - 現有 checkout：`/workspace/Pinball`，遠端 `https://github.com/autimesfive5566/Pinball.git`。本輪沒有另建 worktree。
+- **本輪接手實測**：環境已就緒。開始時 `work` 位於文件基準 `3845f22` 且工作區乾淨，但本機已保存的 `origin/main` 為其後一個提交 `86d5089`（`feat: add Phase 0 prototype and validation`）。確認沒有分歧後，以 `git merge --ff-only origin/main` 接回既有成果；沒有重建專案或建立新提交。現在 `HEAD` 與本機 `origin/main` 相同；未連線重新確認 GitHub 即時 SHA。下列啟動／實作記錄屬前輪歷史。
+- **本輪環境限制**：目前沒有 `node_modules/` 或 `src-tauri/target/`；既有功能測試結果取自已保存的驗證報告，不代表本輪重新執行成功。
 - 啟動時本機 `work` 無 commit、只有 `.git`；GitHub 六份文件實際存在。預設 sandbox 的代理連線失敗，使用允許網路的執行設定後，HTTPS Git 連線正常；不是儲存庫遺失。
 - 取回遠端 HEAD **3845f228b5f581bd318350aa3e1b4dfee72d482b**（文件基準），將原本空的 `work` 接到此提交；接續前沒有任何使用者變更。
 - 本次以 `feat: add Phase 0 prototype and validation` 提交上述基準之上的來源、設定、lockfiles、測試與文件；本機分支為 `work`，推送目標為 `origin/main`。同步以提交後的本機 HEAD 與遠端 `refs/heads/main` SHA 對照，不能單憑本檔宣稱推送成功。沒有觸發 CI、發布或修改雲端設定草稿。
@@ -67,7 +73,7 @@
 ## 5. 下一輪如何接續
 
 1. 讀 AGENTS／本檔，核對來源指紋及 Git 狀態，不重新建立空白專案。
-2. 先完成 Windows x64 原生 build：本機依 README 裝好 MSVC／SDK／WebView2，或在使用者後續授權觸發後使用手動工作流程。工作流程尚未執行，不能引用為通過證據。
+2. 先完成 Windows x64 原生 build：將圖示修正依當輪授權提交／推送後，以新提交重新執行手動工作流程，或於 Windows 本機依 README 建置。舊提交的「Re-run jobs」不會取得新修正；目前只有缺圖示的失敗證據。
 3. 保存一般／NRB 兩份 release 與 SHA，按 ROADMAP 第 8、9 節在 Win10 22H2／Win11 測透明、啟動、操作及 100／125／150%／跨螢幕 DPI。
 4. 透明 release、DevTools 關閉、60Hz 顯示器，暖機 10 秒後至少量測 120 秒並多次落球；分別記錄 60／120 Hz、NRB 關／開、硬體／OS／WebView2／刷新率／DPI。虛擬時鐘輸出不能填入效能通過欄。
 5. 尤其重測外部工作列最小化／恢復、原生拖曳與休眠的事件次序，確認沒有恢復追算；目前只有控制器／瀏覽器證據。
@@ -85,7 +91,21 @@
 | 2026-11-04 | 使用者明確要求提交並推送六份文件，以main建立初始文件基準 | 新checkout可透過Git取得；是否同步以本機／遠端SHA核對 |
 | 2026-11-04 | 使用者明確要求開始 Phase 0；完成跨平台原型及前端驗證 | 原生／Windows gate 保留，未進 Phase 1 |
 | 2026-11-04 | 使用者要求照建議提交並推送 Phase 0 成果 | 本次進度提交目標為 main；Windows gate 與手動 CI 狀態保持未通過／未執行 |
+| 2026-11-04 | 使用者貼回 Windows CI 缺少 `icons/icon.ico` 錯誤；本機補齊原生圖示及檢查 | 修正待提交／推送與新提交的 Windows 重跑，實機 gate 仍未通過 |
+| 2026-11-04 | 使用者明確要求提交並推送圖示修正 | 本次修正提交推送至 main；同步以本機／遠端 SHA 核對，不觸發手動 CI |
 
 ## 7. 本輪文件檢查
 
 文件及程式的實際驗證命令／結果集中於 [Phase 0 報告](validation/phase-0.md)。保留需求、方案、gate、進度的分工；沒有把 npm build、瀏覽器截圖或 Cargo.lock 當成 Windows 實機通過。接手時應重新核對實際狀態，不延用舊 PASS。
+
+2026-11-04 接手檢查，工作目錄 `/workspace/Pinball`，工具為 Git 2.52.0、Python 3.12.14：
+
+- `git status --short --branch`、`git log --all --oneline --decorate --graph`、`git rev-list --left-right --count HEAD...origin/main`：接回前乾淨、落後一個提交；fast-forward 後兩端一致。接手紀錄更新後預期僅 `docs/STATUS.md` 有未提交變更。
+- Python 內嵌唯讀腳本以 `hashlib.sha256` 核對 `docs/validation/phase-0-source-sha256.txt`：30 份來源／設定／lockfiles 全部吻合。
+- Python 內嵌唯讀腳本檢查所有已追蹤 Markdown：非空、UTF-8、無衝突標記，本機 Markdown 連結存在；`git diff --check` 檢查文件空白格式。
+- 本輪只做 Git、來源與文件完整性核對；未安裝依賴或重新執行 npm／Cargo／瀏覽器測試，未取得 Windows 建置、透明或效能新證據。
+- 下一步沿用第 5 節：先補 Windows x64 一般／NRB 原型建置，再做 Win10／Win11 實機驗收；本輪停在接手回報，不擴入 Phase 1。
+
+圖示修正的確切證據、工具版本與限制見 [Phase 0 報告第 7 節](validation/phase-0.md#7-windows-ci-圖示缺漏修正2026-11-04)。原始 30 份來源指紋保留作既有測試基準；修正後 32 份指紋另存 [圖示修正來源 SHA256](validation/phase-0-icon-fix-source-sha256.txt)，不將舊測試紀錄套用為本次原生建置通過。
+
+提交前在同一工作目錄以 `git ls-remote --exit-code origin refs/heads/main` 確認遠端仍為 `86d5089207bcdf65d9186cd14ef6130b246f05da`，沒有新增遠端變更。提交範圍為圖示、設定、workflow、來源指紋及交接文件；推送後核對 HEAD／遠端 SHA 與工作區狀態。沿用圖示與 schema 的實測證據，保存時只補授權／同步文字及文件檢查，沒有新增 Windows 通過聲明。
