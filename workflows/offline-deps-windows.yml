@@ -1,0 +1,157 @@
+name: Offline dependency bundle (Windows x64)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    env:
+      npm_config_update_notifier: 'false'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Read pinned versions
+        shell: pwsh
+        run: |
+          $node = (Get-Content .node-version -Raw).Trim()
+          $npm = (Get-Content package.json -Raw | ConvertFrom-Json).engines.npm
+          $rust = [regex]::Match((Get-Content rust-toolchain.toml -Raw), 'channel\s*=\s*"([^"]+)"').Groups[1].Value
+          if (-not $node -or -not $npm -or -not $rust) { throw 'Pinned tool version not found' }
+          $bundle = Join-Path $env:RUNNER_TEMP 'pinball-offline'
+          New-Item -ItemType Directory -Force "$bundle\tools", "$bundle\rustup-home\toolchains", "$bundle\rustup-home\update-hashes", "$bundle\git" | Out-Null
+          @(
+            "NODE_VERSION=$node"
+            "NPM_VERSION=$npm"
+            "RUST_CHANNEL=$rust"
+            "RUST_TOOLCHAIN=$rust-x86_64-pc-windows-msvc"
+            "BUNDLE_DIR=$bundle"
+          ) | Add-Content $env:GITHUB_ENV
+
+      - name: Download and verify Node.js
+        shell: pwsh
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          $tools = "$env:BUNDLE_DIR\tools"
+          $zip = "node-v$env:NODE_VERSION-win-x64.zip"
+          $base = "https://nodejs.org/dist/v$env:NODE_VERSION"
+          Invoke-WebRequest "$base/SHASUMS256.txt" -OutFile "$tools\SHASUMS256.txt"
+          Invoke-WebRequest "$base/$zip" -OutFile "$tools\$zip"
+          $line = Select-String -Path "$tools\SHASUMS256.txt" -Pattern "^([0-9a-f]{64})\s+$([regex]::Escape($zip))$" | Select-Object -First 1
+          if (-not $line) { throw "No SHA256 entry for $zip" }
+          $actual = (Get-FileHash "$tools\$zip" -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $line.Matches[0].Groups[1].Value) { throw "Node.js SHA256 mismatch: $actual" }
+          Expand-Archive "$tools\$zip" -DestinationPath $env:RUNNER_TEMP
+          "$env:RUNNER_TEMP\node-v$env:NODE_VERSION-win-x64" | Add-Content $env:GITHUB_PATH
+
+      - name: Pack npm and install it offline
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        run: |
+          if ((node --version) -ne "v$env:NODE_VERSION") { throw "Unexpected Node.js $(node --version)" }
+          $tools = "$env:BUNDLE_DIR\tools"
+          npm pack "npm@$env:NPM_VERSION" --pack-destination $tools --json --cache "$env:RUNNER_TEMP\npm-pack-cache" | Set-Content "$tools\npm-pack.json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Empty cache mirrors the offline machine; npm bundles all of its dependencies.
+          npm install --global --offline --cache "$env:RUNNER_TEMP\npm-empty-cache" "$tools\npm-$env:NPM_VERSION.tgz"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ((npm --version) -ne $env:NPM_VERSION) { throw "Unexpected npm $(npm --version)" }
+
+      - name: Install pinned Rust toolchain
+        shell: pwsh
+        run: |
+          rustup toolchain install $env:RUST_CHANNEL --profile minimal --component rustfmt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $rustupHome = (rustup show home).Trim()
+          Copy-Item -Recurse -Force "$rustupHome\toolchains\$env:RUST_TOOLCHAIN" "$env:BUNDLE_DIR\rustup-home\toolchains\"
+          $hashFile = "$rustupHome\update-hashes\$env:RUST_TOOLCHAIN"
+          if (Test-Path $hashFile) { Copy-Item -Force $hashFile "$env:BUNDLE_DIR\rustup-home\update-hashes\" }
+
+      - name: Populate Windows npm cache
+        shell: pwsh
+        run: |
+          npm ci --cache "$env:BUNDLE_DIR\npm-cache" --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Remove-Item -Recurse -Force node_modules
+          Remove-Item -Recurse -Force "$env:BUNDLE_DIR\npm-cache\_logs" -ErrorAction SilentlyContinue
+
+      - name: Fetch Windows crates
+        shell: pwsh
+        run: |
+          $env:CARGO_HOME = "$env:BUNDLE_DIR\cargo-home"
+          cargo fetch --locked --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-ChildItem $env:CARGO_HOME -Force | Where-Object Name -ne 'registry' | Remove-Item -Recurse -Force
+          Remove-Item -Recurse -Force "$env:CARGO_HOME\registry\src" -ErrorAction SilentlyContinue
+
+      - name: Verify offline install and build from bundle copies
+        shell: pwsh
+        env:
+          CARGO_NET_OFFLINE: 'true'
+          # Unreachable dist server makes any rustup download attempt fail the job.
+          RUSTUP_DIST_SERVER: http://127.0.0.1:9
+          RUSTUP_UPDATE_ROOT: http://127.0.0.1:9/rustup
+        run: |
+          $verify = "$env:RUNNER_TEMP\verify"
+          New-Item -ItemType Directory -Force "$verify\cargo-home" | Out-Null
+          Copy-Item -Recurse -Force "$env:BUNDLE_DIR\rustup-home" "$verify\rustup-home"
+          Copy-Item -Recurse -Force "$env:BUNDLE_DIR\cargo-home\registry" "$verify\cargo-home\registry"
+          Copy-Item -Recurse -Force "$env:BUNDLE_DIR\npm-cache" "$verify\npm-cache"
+          $env:RUSTUP_HOME = "$verify\rustup-home"
+          $env:CARGO_HOME = "$verify\cargo-home"
+          npm ci --offline --cache "$verify\npm-cache" --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run typecheck
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo fmt --manifest-path src-tauri/Cargo.toml --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run desktop:build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path src-tauri\target\release\pinball.exe)) { throw 'pinball.exe was not produced' }
+
+      - name: Create Git history bundle
+        shell: pwsh
+        run: |
+          git bundle create "$env:BUNDLE_DIR\git\pinball.bundle" --all
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git bundle verify "$env:BUNDLE_DIR\git\pinball.bundle"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Write build identity and checksums
+        shell: pwsh
+        run: |
+          $root = $env:BUNDLE_DIR
+          @(
+            "source=$env:GITHUB_SHA"
+            "run=$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+            "runner=$env:ImageOS $env:ImageVersion"
+            "node=$(node --version)"
+            "npm=$(npm --version)"
+            "rustc=$(rustc --version)"
+            "cargo=$(cargo --version)"
+            'Runner evidence only: offline npm ci, typecheck, test, cargo fmt --check and desktop:build passed from bundle copies.'
+            'Installing this bundle on the offline machine, desktop transparency, DPI and performance are not verified by this run.'
+          ) | Set-Content "$root\build-info.txt" -Encoding utf8NoBOM
+          Get-ChildItem $root -Recurse -File -Force |
+            Where-Object { $_.FullName -ne "$root\SHA256SUMS.txt" } |
+            ForEach-Object {
+              $rel = [IO.Path]::GetRelativePath($root, $_.FullName).Replace('\', '/')
+              "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $rel"
+            } | Set-Content "$root\SHA256SUMS.txt" -Encoding utf8NoBOM
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: pinball-offline-windows-x64
+          path: ${{ runner.temp }}/pinball-offline/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
